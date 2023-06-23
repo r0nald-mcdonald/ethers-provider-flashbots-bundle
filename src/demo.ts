@@ -114,7 +114,7 @@ async function main() {
       console.log(`Simulation Success: ${JSON.stringify(simulation, bigIntReplacer, 2)}`)
     }
 
-    const bundleSubmission = await flashbotsProvider.sendRawBundle(signedTransactions, targetBlock, { replacementUuid })
+    const bundleSubmission = await flashbotsProvider.sendRawBundle(signedTransactions, targetBlock, "", { replacementUuid })
     console.log('bundle submitted, waiting')
     if ('error' in bundleSubmission) {
       throw new Error(bundleSubmission.error.message)
