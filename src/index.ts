@@ -374,6 +374,7 @@ export class FlashbotsBundleProvider extends AbstractProvider {
   public async sendRawBundle(
     signedBundledTransactions: Array<string>,
     targetBlockNumber: number,
+    header?: string,
     opts?: FlashbotsOptions
   ): Promise<FlashbotsTransaction> {
     const params = {
@@ -386,7 +387,7 @@ export class FlashbotsBundleProvider extends AbstractProvider {
     }
 
     const request = JSON.stringify(this.prepareRelayRequest('eth_sendBundle', [params]))
-    const response = await this.request(request)
+    const response = await this.request(request, header)
     if (response.error !== undefined && response.error !== null) {
       return {
         error: {
@@ -431,10 +432,11 @@ export class FlashbotsBundleProvider extends AbstractProvider {
   public async sendBundle(
     bundledTransactions: Array<FlashbotsBundleTransaction | FlashbotsBundleRawTransaction>,
     targetBlockNumber: number,
+    header?: string,
     opts?: FlashbotsOptions
   ): Promise<FlashbotsTransaction> {
     const signedTransactions = await this.signBundle(bundledTransactions)
-    return this.sendRawBundle(signedTransactions, targetBlockNumber, opts)
+    return this.sendRawBundle(signedTransactions, targetBlockNumber, header, opts)
   }
 
   /** Cancel any bundles submitted with the given `replacementUuid`
@@ -847,7 +849,8 @@ export class FlashbotsBundleProvider extends AbstractProvider {
     signedBundledTransactions: Array<string>,
     blockTag: BlockTag,
     stateBlockTag?: BlockTag,
-    blockTimestamp?: number
+    blockTimestamp?: number,
+    header?: string
   ): Promise<SimulationResponse> {
     let evmBlockNumber: string
     if (typeof blockTag === 'number') {
@@ -877,7 +880,7 @@ export class FlashbotsBundleProvider extends AbstractProvider {
       }
     ]
     const request = JSON.stringify(this.prepareRelayRequest('eth_callBundle', params))
-    const response = await this.request(request)
+    const response = await this.request(request, header)
     if (response.error !== undefined && response.error !== null) {
       return {
         error: {
@@ -1083,10 +1086,13 @@ export class FlashbotsBundleProvider extends AbstractProvider {
     return resp.bodyJson
   }
 
-  private async request(body: string) {
+  private async request(body: string, header?: string) {
     const request = this.#connect.clone()
     request.setHeader('Content-Type', 'application/json')
     request.setHeader('X-Flashbots-Signature', `${await this.authSigner.getAddress()}:${await this.authSigner.signMessage(id(body))}`)
+    if (header) {
+      request.setHeader('Authorization', header);
+    }
     request.body = body
     const resp = await request.send()
     try {
